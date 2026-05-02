@@ -1,3 +1,5 @@
-int hmm = 5;
+int test0 = 5;
+int test1 = test0 + 2;
+int test2 = 2 + test1;
 
-int test = hmm + 2;
+int sum = (test0 + test1) + test2;

@@ -12,7 +12,7 @@ parameter: IDENTIFIER IDENTIFIER
 
 declaration: IDENTIFIER IDENTIFIER ["=" expr] ";"
 
-assignment: IDENTIFIER ["=" expr] ";"
+assignment: IDENTIFIER "=" expr ";"
 
 ?expr: bitwise_or
 

@@ -124,14 +124,14 @@ class Transformer(t):
             if not result:
                 raise ParseErr("asdasd",1,1,1)
             self.size = result.size
+            self.pos = result.pos
 
         def collect(self, context):
             self.out = []
-            self.out.extend(self.value.eval(context))
-            self.out.extend([
-                "pop ax",
-                f"mov " + "[" + ("b" if self.size == 1 else "w") + f" bp-{context.get(self.name).pos}]" + ", ax"
-            ])
+            if self.value:
+                self.out.extend(self.value.eval(context))
+            if self.value:
+                self.out.append(("set",self.name))
         
         def emit(self):
             return self.out
@@ -148,13 +148,15 @@ class Transformer(t):
             self.name = self.name.eval()
             if not context.check(self.name):
                 raise ParseErr("undefined!!",1,1,1)
+            result = context.get(self.name)
+            self.size = result.size
+            self.pos = result.pos
 
         def collect(self, context):
             self.out = []
             self.out.extend(self.value.eval(context))
             self.out.extend([
-                "pop ax",
-                f"mov " + "[" + ("b" if self.size == 1 else "w") + f" bp-{context.get(self.name).pos}]" + ", ax"
+                ("set",self.name)
             ])
         
         def emit(self):
@@ -163,27 +165,33 @@ class Transformer(t):
         def __repr__(self):
             return repr(self.name) + " = " + repr(self.value)
 
-    class expr(Branch):
+    class binary_op(Branch):
+        name = ""
+        commutative = False
+
         def __init__(self, value):
             super().__init__(value)
             self.lhs = self.children[0]
             self.rhs = self.children[1]
-
-    class add(expr):
+        
         def eval(self, context):
             out = []
 
-            out.extend(self.lhs.eval(context))
-            out.extend(self.rhs.eval(context))
-            
-            out.extend([
-                "pop dx",
-                "pop ax",
-                "add ax, dx",
-                "push ax"
-            ])
+            lhs = self.lhs.eval(context)
+            rhs = self.rhs.eval(context)
+
+            if lhs[-1][0] == "lit" and self.commutative:
+                lhs, rhs = rhs, lhs
+
+            out.extend(lhs)
+            out.extend(rhs)
+            out.append((self.name,))
 
             return out
+
+    class add(binary_op):
+        name = "add"
+        commutative = True
 
     class literal(Branch):
         def __init__(self, value):
@@ -192,8 +200,7 @@ class Transformer(t):
         
         def eval(self, context):
             return [
-                f"mov ax, {self.value.eval()}",
-                "push ax"
+                ("lit",self.value.eval())
             ]
 
         def __repr__(self):
@@ -209,14 +216,15 @@ class Transformer(t):
             result = context.get(name)
             if not result:
                 raise ParseErr("undefined!!!!",1,1,1)
-            size = result.size
-            index = result.pos
 
             return [
-                f"mov ax, " + "[" + ("b" if size == 1 else "w") + f" bp-{index}]"
+                ("get",name)
             ]
 
     class DECIMAL(Leaf):
+        def eval(self):
+            return int(self.value)
+
         def __repr__(self):
             return self.value
 

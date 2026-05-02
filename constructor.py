@@ -7,8 +7,8 @@ class Constructor:
     def __init__(self):
         self.globals = Context()
 
-    def main(self,ast:Transformer.start,filename="<main>") -> list[str]:
-
+    def main(self,ast:Transformer.start,filename="<main>") -> list[tuple[str,int]]:
+        "produce IR"
         contexts = ast.eval(self.globals)
 
         ast.collect(self.globals)

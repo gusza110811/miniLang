@@ -49,7 +49,7 @@ class Assembler:
         print("\n")
         try:
             out = self.constructor.main(tree,filename)
-            print("\n".join(out))
+            print("\n".join([repr(part) for part in out]))
         except parser.ParseErr as e:
             print(f"File {filename} line {e.line+1} char {e.col}")
             print(color.fg.MAGENTA + e.msg.capitalize())
