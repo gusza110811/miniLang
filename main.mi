@@ -1,0 +1,3 @@
+int hmm = 5;
+
+int test = hmm + 2;

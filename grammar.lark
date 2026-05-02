@@ -1,0 +1,78 @@
+start: statement+
+
+?statement: assignment
+    | scope
+    | declaration
+
+scope: "{" statement* "}"
+
+//func_def: IDENTIFIER IDENTIFIER "(" [parameter ("," parameter)*] ")" (statement | ";")
+
+parameter: IDENTIFIER IDENTIFIER
+
+declaration: IDENTIFIER IDENTIFIER ["=" expr] ";"
+
+assignment: IDENTIFIER ["=" expr] ";"
+
+?expr: bitwise_or
+
+?bitwise_or: bitwise_xor
+    | bitwise_or "|" bitwise_xor -> or_op
+
+?bitwise_xor: bitwise_and
+    | bitwise_xor "^" bitwise_and -> xor_op
+
+?bitwise_and: shift
+    | bitwise_and "&" shift -> and_op
+
+?shift: sum
+    | shift ">>" sum -> shiftr
+    | shift "<<" sum -> shiftl
+
+?sum: term
+    | sum "+" term -> add
+    | sum "-" term -> sub
+
+?term: unary
+    //| term "*" unary -> mul
+    //| term "/" unary -> div
+    //| term "%" unary -> mod
+
+?unary: factor
+    | "~" unary -> not_op
+    | "-" unary -> unary_sub
+
+?factor: "(" expr ")"
+    | literal
+    | symbol
+
+literal: DECIMAL
+    | OCTAL
+    | HEX
+    | BINARY
+    | CHAR
+
+symbol: IDENTIFIER
+
+HEX: /0x[0-9a-fA-F_]+/
+OCTAL: /0o[0-7_]+/
+BINARY: /0b[01_]+/
+DECIMAL: /[0-9_]+/
+STRING: ESCAPED_STRING
+IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/
+
+CHAR: "'" /.*/ "'"
+
+COMMENT: "//" /.*/ _NEWLINE
+
+%import common.ESCAPED_STRING
+%import common.WS
+%import common.WS_INLINE
+%import common.NEWLINE
+
+_NEWLINE: NEWLINE
+_WS: WS
+
+%ignore WS_INLINE
+%ignore NEWLINE
+%ignore COMMENT
