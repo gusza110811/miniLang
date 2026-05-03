@@ -10,6 +10,10 @@ def register(name,type):
 def get(name) -> T:
     return mapping.get(name)()
 
+class Void(T):
+    size = 0
+register("void",Void)
+
 class Char(T):
     size = 1
 register("char",Char)

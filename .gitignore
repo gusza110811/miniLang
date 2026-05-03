@@ -1,4 +1,7 @@
 .*
 !/.gitignore
 
+*.asm
+*.bin
+
 __pycache__

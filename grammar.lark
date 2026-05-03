@@ -1,12 +1,18 @@
 start: statement+
 
 ?statement: assignment
+    | asm
     | scope
     | declaration
+    | func_def
 
 scope: "{" statement* "}"
 
-//func_def: IDENTIFIER IDENTIFIER "(" [parameter ("," parameter)*] ")" (statement | ";")
+func_def: IDENTIFIER IDENTIFIER "(" (parameter ("," parameter)*)? ")" (statement | ";")
+
+asm: "asm" strings ";"
+
+strings: "(" STRING+ ")"
 
 parameter: IDENTIFIER IDENTIFIER
 

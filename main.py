@@ -16,23 +16,23 @@ class Assembler:
         tree = None
         try:
             tree = self.parser.parse(code,filename)
-        except lark.exceptions.UnexpectedCharacters as e:
-            line = e.line -1 if e.line > 0 else -1
-            col = e.column -1 if e.column > 0 else -1
-            msg = "unexpected character at line"
-            match e.char:
-                case "{":
-                    msg = "unmatched braces"
-                case "\"":
-                    msg = "unmatched quote"
-                case "'":
-                    msg = "unmatched quote"
-                case "\n":
-                    msg = "unexpected line break"
-            print(color.fg.MAGENTA + f"{msg} {line+1} char {col+1}")
-            print(color.RESET + "  "+codelns[line])
-            print(color.fg.RED + "  "+" "*(col)+"^")
-            return None
+        # except lark.exceptions.UnexpectedCharacters as e:
+        #     line = e.line -1 if e.line > 0 else -1
+        #     col = e.column -1 if e.column > 0 else -1
+        #     msg = "unexpected character at line"
+        #     match e.char:
+        #         case "{":
+        #             msg = "unmatched braces"
+        #         case "\"":
+        #             msg = "unmatched quote"
+        #         case "'":
+        #             msg = "unmatched quote"
+        #         case "\n":
+        #             msg = "unexpected line break"
+        #     print(color.fg.MAGENTA + f"{msg} {line+1} char {col+1}")
+        #     print(color.RESET + "  "+codelns[line])
+        #     print(color.fg.RED + "  "+" "*(col)+"^")
+        #     return None
         except lark.exceptions.UnexpectedEOF as e:
             line = e.line -1 if e.line > 0 else -1
             col = e.column -1 if e.column > 0 else -1
@@ -49,7 +49,6 @@ class Assembler:
         print("\n")
         try:
             out = self.constructor.main(tree,filename)
-            print("\n".join([repr(part) for part in out]))
         except parser.ParseErr as e:
             print(f"File {filename} line {e.line+1} char {e.col}")
             print(color.fg.MAGENTA + e.msg.capitalize())
@@ -57,7 +56,7 @@ class Assembler:
             print(color.fg.RED + "  " + " "*e.col+"^"*(e.colend-e.col if e.col < e.colend else 1))
             print(color.fg.GRAY + e.hint.capitalize())
             return None
-        #return out
+        return out
 
 def test():
     test = open("main.mi").read()
@@ -65,7 +64,7 @@ def test():
     assembler = Assembler()
     out = assembler.main(test)
     if out:
-        with open("main.asm","wb") as file:
+        with open("main.asm","w") as file:
             file.write(out)
 
 def main():
@@ -90,7 +89,7 @@ def main():
     assembler = Assembler()
     out = assembler.main(code,source)
     if out:
-        with open(dest,"wb") as file:
+        with open(dest,"w") as file:
             file.write(out)
     else:
         sys.exit(1)

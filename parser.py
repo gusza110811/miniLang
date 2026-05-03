@@ -82,6 +82,8 @@ class Transformer(t):
         
         def eval(self, context):
             for child in self.children:
+                if not isinstance(child,Transformer.func_def):
+                    raise ParseErr("non func in global")
                 child.eval(context)
         
         def collect(self, context):
@@ -91,25 +93,72 @@ class Transformer(t):
         def emit(self):
             out = []
             for child in self.children:
-                out.extend(child.emit())
+                out.append(child.emit())
             
             return out
     
-    class scope(Branch):
+    class scope(Codegen):
+        context:Context
+
         def __repr__(self):
             return "{\n" + "\n".join(["  " + repr(child) for child in self.children]) + "\n}"
-
+        
+        def eval(self, context):
+            self.context = Context(context)
+            for child in self.children:
+                child.eval(self.context)
+        
+        def collect(self, context):
+            for child in self.children:
+                child.collect(self.context)
+        
+        def emit(self):
+            out = [(self.context,)]
+            for child in self.children:
+                out.extend(child.emit())
+            
+            return out
     class func_def(Branch):
         def __init__(self, value):
             super().__init__(value)
             self.type = self.children[0]
             self.name = self.children[1]
             self.parameters = self.children[2:-1]
-            self.statement = self.children[-1]
+            self.statement:Transformer.scope = self.children[-1]
+        
+        def eval(self, context):
+            self.type = self.type.eval()
+            self.name = self.name.eval()
+
+            for child in self.parameters:
+                child.eval(context)
+            
+            self.statement.eval(context)
+
+        def collect(self, context):
+            self.statement.collect(context)
+
+        def emit(self):
+            out = [("label",self.name)]
+            out.extend(self.statement.emit())
+            out.append(("ret"))
+            return out
 
         def __repr__(self):
             return (repr(self.name) + "(" + ",".join([repr(param) for param in self.parameters]) + ")" + " -> " + repr(self.type) + repr(self.statement))
     
+    class asm(Codegen):
+        def collect(self, context):
+            self.out = self.children[0].eval(context)
+        def emit(self):
+            return [("asm",self.out)]
+    class strings(Branch):
+        def eval(self, context):
+            values = []
+            for child in self.children:
+                values.append(child.eval())
+            return "\n".join(values)
+
     class declaration(Codegen):
         def __init__(self, value):
             super().__init__(value)
@@ -210,12 +259,12 @@ class Transformer(t):
         def __init__(self, value):
             super().__init__(value)
             self.value = self.children[0]
-        
         def eval(self, context):
             name = self.value.eval()
             result = context.get(name)
+            tok = self.value.get_first_token()
             if not result:
-                raise ParseErr("undefined!!!!",1,1,1)
+                raise ParseErr("undefined!!!!",tok.line-1,tok.column-1,tok.end_column-1)
 
             return [
                 ("get",name)
@@ -227,10 +276,33 @@ class Transformer(t):
 
         def __repr__(self):
             return self.value
+    
+    class HEX(Leaf):
+        def eval(self):
+            return int(self.value[2:],base=16)
+        def __repr__(self):
+            return self.value
+    class BINARY(Leaf):
+        def eval(self):
+            return int(self.value[2:],base=2)
+        def __repr__(self):
+            return self.value
+    class OCTAL(Leaf):
+        def eval(self):
+            return int(self.value[2:],base=8)
+        def __repr__(self):
+            return self.value
 
     class IDENTIFIER(Leaf):
         def __repr__(self):
             return "identifier " + self.value
+    
+    class STRING(Leaf):
+        def __repr__(self):
+            return "string " + self.value
+        
+        def eval(self):
+            return self.value[1:-1]
 
 class Parser:
     def __init__(self):

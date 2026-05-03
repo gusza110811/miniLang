@@ -6,10 +6,11 @@ class Context:
         self.parent = parent
         self.root = parent is None
         self.next = 0
+        self.next_param = 0
         self.data:dict[type.T] = {}
     
     def __repr__(self):
-        return ("root" if self.root else repr(self.parent)) + f">Context()"
+        return "root" if self.root else repr(self.parent) + f">Context()"
 
     def get(self, key:str) -> type.T:
         val = self.data.get(key)
@@ -28,7 +29,17 @@ class Context:
         if not val:return
 
         self.next += val.size
-        val.pos = self.next
+        val.pos = -self.next
+
+        self.data[key] = val
+        return val
+
+    def add_param(self, key:str, t:typing.Literal["char","int","ptr"]):
+        val = type.get(t)
+        if not val:return
+
+        self.next_param += val.size
+        val.pos = self.next_param
 
         self.data[key] = val
         return val
