@@ -24,5 +24,4 @@ register("int",Int)
 
 class Ptr(T):
     size = 2
-    targetsize = 0
 register("ptr",Int)

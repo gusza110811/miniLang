@@ -7,7 +7,7 @@ class Context:
         self.root = parent is None
         self.next = 0
         self.next_param = 0
-        self.data:dict[type.T] = {}
+        self.data:dict[str,type.T] = {}
     
     def __repr__(self):
         return "root" if self.root else repr(self.parent) + f">Context()"

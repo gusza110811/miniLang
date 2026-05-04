@@ -82,8 +82,6 @@ class Transformer(t):
         
         def eval(self, context):
             for child in self.children:
-                if not isinstance(child,Transformer.func_def):
-                    raise ParseErr("non func in global")
                 child.eval(context)
         
         def collect(self, context):
@@ -93,7 +91,7 @@ class Transformer(t):
         def emit(self):
             out = []
             for child in self.children:
-                out.append(child.emit())
+                out.extend(child.emit())
             
             return out
     
@@ -113,11 +111,11 @@ class Transformer(t):
                 child.collect(self.context)
         
         def emit(self):
-            out = [(self.context,)]
+            out = []
             for child in self.children:
                 out.extend(child.emit())
             
-            return out
+            return [("scope",self.context,out)]
     class func_def(Branch):
         def __init__(self, value):
             super().__init__(value)
@@ -141,7 +139,7 @@ class Transformer(t):
         def emit(self):
             out = [("label",self.name)]
             out.extend(self.statement.emit())
-            out.append(("ret"))
+            out.append(("ret",))
             return out
 
         def __repr__(self):

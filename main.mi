@@ -1,9 +1,9 @@
 void main() {
-    int test0 = 0x41;
+    char test0 = 0x41;
 
     asm (
         "mov bx, 0xffff"
-        "mov ax, [b bp-2]"
+        "mov ax, [b bp-1]"
         "out bx, ax"
         "hlt"
     );

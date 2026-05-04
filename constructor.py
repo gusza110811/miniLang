@@ -15,7 +15,7 @@ class Constructor:
     def __init__(self):
         self.globals = Context()
         self.ir:list[list[tuple]]
-        self.out:str
+        self.out = ""
 
     def main(self,ast:Transformer.start,filename="<main>") -> str:
         "produce IR"
@@ -26,26 +26,23 @@ class Constructor:
         #print(self.globals.data)
 
         self.ir = ast.emit()
-        for func in self.ir:
-            for part in func:
-                print(part)
-            print(",")
+        print(self.ir)
         
         print("\n---\n")
 
-        self.optimize()
-        for func in self.ir:
-            for part in func:
-                print(part)
-            print(",")
+        dirty = True
+        while dirty:
+            self.ir, dirty = self.optimize(self.ir)
+        print(self.ir)
 
-        self.lower()
+        self.out = self.lower(self.ir)
         print(self.out)
 
-        return self.out
+        return "\n".join(self.out)
 
-    def optimize_scope(self,scope):
-        context:Context
+    def optimize(self,scope,context:Context=None):
+        if not context:
+            context = self.globals
         idx = 0
         def next():
             nonlocal idx
@@ -61,12 +58,10 @@ class Constructor:
                 return True
             else:
                 return False
-        
-        context = next()
 
         dirty = False
 
-        out = [context]
+        out = []
 
         prev = ("",)
         while 1:
@@ -76,6 +71,18 @@ class Constructor:
 
             command = current[0]
             prev_command = prev[0]
+
+            matched=True
+            match command:
+                case "scope":
+                    result, checkdirty = self.optimize(current[2],current[1])
+                    dirty |= checkdirty
+                    out.append(("scope",current[1],result))
+
+                case _:
+                    matched = False
+            if matched:continue
+
             match (command,prev_command):
                 case "add","lit":
                     dirty = True
@@ -94,17 +101,8 @@ class Constructor:
 
         return out, dirty
 
-    def optimize(self):
-        dirty = True
-        out = []
-        while dirty:
-            for scope in self.ir:
-                scope, dirty = self.optimize_scope(scope)
-                out.append(scope)
-            self.ir = out
-            out = []
-
-    def lower_scope(self,scope:list[tuple]):
+    def lower(self,scope:list[tuple],context:Context=None):
+        if not context: context = self.globals
         idx = 0
         def next():
             nonlocal idx
@@ -122,12 +120,6 @@ class Constructor:
                 return False
         
         out = []
-
-        label = next()
-        out.append(label[1]+"{")
-
-        context:Context = next()[0]
-        print(context.get_all())
 
         for var in context.get_all().values():
             if var.size == 1:
@@ -168,7 +160,7 @@ class Constructor:
                     else:
                         current_action = action(True,False,False,False)
                 # pop
-                case "set"|"ret":
+                case "set":
                     if active_register == "ax":
                         current_action = action(False,True,False,False)
                     else:
@@ -183,7 +175,7 @@ class Constructor:
                 case _:
                     current_action = action(False,False,False,False)
             
-            #print(current_action)
+            #print(context,current_action)
 
             if prev_action.pushed_ax:
                 if not current_action.popped_ax:
@@ -205,6 +197,15 @@ class Constructor:
                 case "asm":
                     reset()
                     out.append(current[1])
+                
+                case "scope":
+                    out.append("{")
+                    out.extend(self.lower(current[2],current[1]))
+                    out.append("}")
+                
+                case "label":
+                    out.append(current[1] + ":")
+
                 # pop
                 case "set":
                     key = current[1]
@@ -245,13 +246,5 @@ class Constructor:
                     swap()
                     out.append("mov " + active_register +", [" + size + " bp " + positive + pos + "]")
         
-        out.append("}")
-        
         return out
 
-    def lower(self):
-        out = []
-        for scope in self.ir:
-            out.extend(self.lower_scope(scope))
-        
-        self.out = "\n".join(out)
