@@ -145,6 +145,16 @@ class Transformer(t):
         def __repr__(self):
             return (repr(self.name) + "(" + ",".join([repr(param) for param in self.parameters]) + ")" + " -> " + repr(self.type) + repr(self.statement))
     
+    class parameter(Branch):
+        def eval(self,context):
+            self.type = self.children[0].eval()
+            self.name = self.children[0].eval()
+            result = context.add_param(self.name,self.type)
+            if not result:
+                raise ParseErr("asdasd",1,1,1)
+            self.size = result.size
+            self.pos = result.pos
+
     class asm(Codegen):
         def collect(self, context):
             self.out = self.children[0].eval(context)
@@ -175,6 +185,7 @@ class Transformer(t):
 
         def collect(self, context):
             self.out = []
+            self.out.append(("declare", self.name))
             if self.value:
                 self.out.extend(self.value.eval(context))
             if self.value:
@@ -301,6 +312,11 @@ class Transformer(t):
         
         def eval(self):
             return self.value[1:-1]
+    
+    class CHAR(Leaf):
+        def eval(self):
+            val = self.value[1:-1]
+            return ord(val[0])
 
 class Parser:
     def __init__(self):

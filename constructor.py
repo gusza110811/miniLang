@@ -205,16 +205,22 @@ class Constructor:
                 
                 case "label":
                     out.append(current[1] + ":")
+                
+                case "declare":
+                    key = current[1]
+                    rep = context.get(key)
+                    pos = str(rep.pos)
+                    size = "w" if rep.size == 2 else "b"
+
+                    out.append(key + " = " + pos)
 
                 # pop
                 case "set":
                     key = current[1]
                     rep = context.get(key)
-                    pos = str(rep.pos)
                     size = "w" if rep.size == 2 else "b"
-                    positive = "+" if rep.pos >= 0 else ""
 
-                    out.append("mov [" + size + " bp " + positive + pos + "], " + active_register)
+                    out.append("mov [" + size + " bp + " + key + "], " + active_register)
 
                 case "ret":
                     out.append("ret") # temporary
